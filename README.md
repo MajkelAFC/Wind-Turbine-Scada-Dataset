@@ -10,3 +10,6 @@ The objective of this project is to build an automated data pipeline that extrac
 *   **Orchestration:** Apache Airflow
 *   **Data Warehouse:** PostgreSQL
 *   **Data Visualization:** Apache Superset
+
+## Project Status
+Ready for evaluation.
