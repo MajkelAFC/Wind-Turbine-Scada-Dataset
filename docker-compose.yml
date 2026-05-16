@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  postgres_dw:
+  wind_postgres_dw:
     image: postgres:15
     container_name: wind_postgres_dw
     environment:
@@ -12,6 +12,33 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wind_network
+
+  airflow:
+    image: apache/airflow:2.7.1-python3.10
+    container_name: wind_airflow
+    environment:
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./data:/opt/airflow/data
+      - ./main.py:/opt/airflow/main.py
+      - ./src:/opt/airflow/src
+    ports:
+      - "8080:8080"
+    command: standalone
+    networks:
+      - wind_network
+    depends_on:
+      - wind_postgres_dw
 
 volumes:
   postgres_data:
+
+networks:
+  wind_network:
+    driver: bridge
