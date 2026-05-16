@@ -1,6 +1,7 @@
 # Import our classes from different folders
 from src.infrastructure.turbine_repository import TurbineRepository
 from src.application.wind_farm_service import WindFarmService
+from src.infrastructure.database import PostgresTurbineRepository
 
 # Set the path to the data file
 path = "data/raw/T1.csv"
@@ -18,8 +19,18 @@ for t in turbines:
 # Create a service object to do calculations
 service = WindFarmService()
 
-# Calculate the sum of power from all working turbines
-total = service.calculate_total_power(turbines)
+# Calculate the avg of power from all working turbines
+avg_power = service.calculate_average_power(turbines)
 
 # Print the final result on the screen
-print(f"Total Power of the farm: {total} MW")
+print(f"Average Power of the farm: {avg_power:.2f}MW")
+
+# Create an instance of object
+postgres = PostgresTurbineRepository(host="localhost", database="wind_energy_dw",
+                                     user="admin",password="admin_password")
+
+try:
+    postgres.save(turbines)
+    print("Success: Data saved to PostgreSQL!")
+except Exception as e:
+    print(f"Error: {e}")

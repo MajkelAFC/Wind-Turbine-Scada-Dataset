@@ -1,23 +1,20 @@
 import psycopg2
-from sqlalchemy import create_engine
+from src.domain.wind_turbine import WindTurbine
 
-# Connection string for our PostgreSQL Docker container
-# Format: postgresql://username:password@host:port/database_name
-DATABASE_URL = "postgresql://admin:admin_password@localhost:5432/wind_energy_dw"
+class PostgresTurbineRepository:
 
-def get_db_engine():
-    """
-    Creates and returns a SQLAlchemy engine for database connection.
-    This is part of our Infrastructure layer.
-    """
-    try:
-        engine = create_engine(DATABASE_URL)
-        print("Success: Connected to the PostgreSQL data warehouse.")
-        return engine
-    except Exception as error:
-        print(f"Error: Could not create database engine. Details: {error}")
-        return None
+    def __init__(self, host, database, user, password):
+        self.host = host
+        self.database = database
+        self.user = user
+        self.password = password
 
-if __name__ == "__main__":
-    # Test the connection when the script is run directly
-    get_db_engine()
+    def save(self, turbines):
+        with psycopg2.connect(host=self.host, database=self.database,
+                              user=self.user, password=self.password) as conn:
+            cur = conn.cursor()
+            for turbine in turbines:
+                cur.execute(
+                    "INSERT INTO wind_turbines (turbine_id, active_power, wind_speed) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
+                    (turbine.turbine_id, turbine.active_power, turbine.wind_speed)
+                )
