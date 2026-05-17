@@ -3,6 +3,7 @@ import csv
 from src.domain.wind_turbine import WindTurbine
 
 
+
 class TurbineRepository:
     """
     Repository class responsible for loading wind turbine data from external CSV files.

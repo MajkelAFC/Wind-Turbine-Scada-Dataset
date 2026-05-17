@@ -2,12 +2,14 @@
 from src.infrastructure.turbine_repository import TurbineRepository
 from src.application.wind_farm_service import WindFarmService
 from src.infrastructure.database import PostgresTurbineRepository
+from pathlib import Path
 
 # Set the path to the data file
-path = "data/raw/T1.csv"
+base_dir = Path(__file__).resolve().parent
+csv_path = base_dir / "data" / "raw" / "T1.csv"
 
 # Create a repository object to handle files
-repo = TurbineRepository(path)
+repo = TurbineRepository(str(csv_path))
 
 # Load all turbines from CSV and save them in a list
 turbines = repo.load_turbines()
@@ -26,8 +28,8 @@ avg_power = service.calculate_average_power(turbines)
 print(f"Average Power of the farm: {avg_power:.2f}MW")
 
 # Create an instance of object
-postgres = PostgresTurbineRepository(host="localhost", database="wind_energy_dw",
-                                     user="admin",password="admin_password")
+postgres = PostgresTurbineRepository(host="wind_postgres_dw", database="wind_energy_dw",
+                                     user="admin", password="admin_password")
 
 try:
     postgres.save(turbines)
