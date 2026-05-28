@@ -3,7 +3,6 @@ import csv
 from src.domain.wind_turbine import WindTurbine
 
 
-
 class TurbineRepository:
     """
     Repository class responsible for loading wind turbine data from external CSV files.
@@ -21,7 +20,7 @@ class TurbineRepository:
         turbines = []
 
         # Open the CSV file for reading
-        with open(self.file_path, "r") as file:
+        with open(self.file_path, "r", encoding="utf-8-sig") as file:
             # DictReader uses the first line of the CSV as keys for each row dictionary
             reader = csv.DictReader(file)
 
@@ -35,8 +34,9 @@ class TurbineRepository:
                 clean_power = max(0, raw_power)
 
                 # Map CSV columns to the WindTurbine Domain Model.
-                # Note: 'turbine_id' is set to 'T1' as it's missing in the raw T1.csv file.
+                # We now extract the 'Date/Time' string from the CSV file.
                 t = WindTurbine(
+                    date_time=row["Date/Time"],
                     turbine_id="T1",
                     active_power=clean_power,
                     wind_speed=float(row["Wind Speed (m/s)"])

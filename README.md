@@ -1,71 +1,46 @@
 # Wind Energy Analytics Platform
 
-The main goal of this script is to read a large CSV file containing wind turbine metrics, clean the data based on business rules, calculate the average power, and save everything into a PostgreSQL database.
-
-## Specification
-
-* **Domain-Driven Design (DDD):** I structured my code into separate layers (Domain, Application, Infrastructure). This keeps the business logic completely separate from database frameworks.
-* **Data Cleaning:** I used Python to clean raw SCADA data, like fixing negative values recorded by systems and ensuring data types are correct before saving.
-* **Docker & Docker Compose:** Instead of installing database servers on my laptop, I containerized the app. The database and backend run in isolated virtual environments.
-* **Apache Airflow:** I moved away from manual script execution. I wrote a custom DAG that tells Airflow to automatically run the Python pipeline.
-* **Pathlib Module:** I learned how to use dynamic absolute paths instead of relative strings, so the script runs successfully both on my local machine and inside Docker containers.
+A simple Data Engineering pipeline built with Python, Apache Airflow, and PostgreSQL. The project processes wind turbine telemetry data using the **Medallion Architecture** (Bronze -> Silver -> Gold) and follows **Domain-Driven Design (DDD)** principles.
 
 ---
 
-## Project Structure
+## Architecture Overview
 
-├── dags/
-│   └── wind_farm_dag.py             # Airflow configuration file (DAG)
-├── src/
-│   ├── domain/
-│   │   └── wind_turbine.py          # Domain model with business rules
-│   ├── application/
-│   │   └── wind_farm_service.py     # Application logic (averages calculation)
-│   └── infrastructure/
-│       ├── turbine_repository.py    # CSV file reader implementation
-│       └── database.py              # PostgreSQL repository connection
-├── data/
-│   └── raw/
-│       └── T1.csv                   # Raw source telemetry data
-├── main.py                          # Main entry point to run the script
-├── docker-compose.yaml              # Docker configuration for Postgres and Airflow
-└── pyproject.toml                   # Project dependencies (managed by uv)
+The pipeline processes data through three distinct layers:
+1. **Bronze Layer**: Raw CSV data is loaded into the database as an append-only log.
+2. **Silver Layer**: Data is cleaned and validated using a Python domain model (`WindTurbine`). Only valid records with accurate timestamps are stored. Duplicates are handled using `ON CONFLICT DO NOTHING`.
+3. **Gold Layer**: Business metrics (such as average power output) are calculated and saved for reporting.
 
+---
+
+## Tech Stack
+
+* **Language:** Python 3.10
+* **Orchestration:** Apache Airflow
+* **Database:** PostgreSQL 15
+* **Containerization:** Docker & Docker Compose
 
 ---
 
 ## How to Run the Project
 
-### 1. Prerequisites
-You only need **Docker** and **Git** installed on your system.
-
-### 2. Startup Containers
-Open your terminal in the project directory and run:
+### 1. Start the Environment
+Run Docker Compose to start PostgreSQL and Apache Airflow:
 ```bash
-docker-compose up -d
+docker compose up -d
 
-This will automatically download and start PostgreSQL and Apache Airflow services in the background.
-3. Run the Pipeline via Airflow
+2. Access Apache Airflow
 
-    Open your browser and go to http://localhost:8080 to access the Airflow panel.
+    Open your browser and go to: http://localhost:8080
 
-    Find the pipeline named wind_energy_etl_pipeline.
+    Username: admin
 
-    Turn the toggle switch to Active (blue).
+    Password: To get the auto-generated password, run this command in your terminal:
+    
+docker compose exec airflow cat /opt/airflow/standalone_admin_password.txt
 
-    Click the Play button (Trigger DAG) on the right side to execute the pipeline.
+3. Run the Pipeline
 
-4. Verify Success
+    Find the wind_energy_medallion_pipeline DAG in the Airflow UI.
 
-You can click on the task, open the Logs, and scroll to the bottom. When the processing finishes, you will see my script output:
-Plaintext
-
-INFO - Average Power of the farm: 1307.68MW
-INFO - Success: Data saved to PostgreSQL!
-
-How to Stop
-
-To close all services and free up your computer's RAM memory:
-Bash
-
-docker-compose down
+    Turn the switch to Active and click the Trigger button to execute the pipeline.
