@@ -1,0 +1,5 @@
+venv/
+# Airflow logs
+logs/
+# PyCharm configurations
+.idea/

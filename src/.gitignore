@@ -1,0 +1,12 @@
+# Python temporary files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Databases and environment
+.env
+*.db
+*.sqlite
+
+# Data
+data/raw/*.csv
