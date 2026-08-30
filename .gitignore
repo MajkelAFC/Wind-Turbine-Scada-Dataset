@@ -1,5 +1,13 @@
+# Python virtual environments
+.venv/
 venv/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
 # Airflow logs
 logs/
-# PyCharm configurations
+
+# IDE configurations
 .idea/
