@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS wind_data_silver (
     created_at TIMESTAMP,
     turbine_id VARCHAR(50),
     active_power NUMERIC,
-    wind_speed NUMERIC
+    wind_speed NUMERIC,
+    CONSTRAINT uq_reading UNIQUE (created_at, turbine_id)
 );
 
 CREATE TABLE IF NOT EXISTS wind_data_gold (
