@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   wind_postgres_dw:
@@ -9,9 +8,10 @@ services:
       POSTGRES_PASSWORD: admin_password
       POSTGRES_DB: wind_energy_dw
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - wind_network
 

@@ -14,7 +14,7 @@ class PostgresTurbineRepository:
             cur = conn.cursor()
             # Loop and insert all raw rows into the bronze table
             for raw_data in raw_data_list:
-                cur.execute("INSERT INTO wind_data_bronze (turbine_id, active_power, wind_speed) VALUES (%s, %s, %s)",
+                cur.execute("INSERT INTO wind_data_bronze (date_time, turbine_id, active_power, wind_speed) VALUES (%s, %s, %s, %s)",
                             raw_data)
 
     def save_silver(self, clean_turbines):
@@ -41,3 +41,22 @@ class PostgresTurbineRepository:
                 "INSERT INTO wind_data_gold (calculated_at, average_power_mw) VALUES (%s, %s)",
                 (timestamp, average_power)
             )
+    def read_bronze(self):
+        # Read all raw rows back from the bronze table
+        with psycopg2.connect(database=self.database, host=self.host, user=self.user, password=self.password) as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT date_time, turbine_id, active_power, wind_speed FROM wind_data_bronze")
+            return cur.fetchall()
+
+    def read_silver(self):
+        # Read validated rows back from the silver table
+        with psycopg2.connect(database=self.database, host=self.host, user=self.user, password=self.password) as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT created_at, turbine_id, active_power, wind_speed FROM wind_data_silver")
+            return cur.fetchall()
+
+    def truncate(self, table):
+        # Empty a table before writing, so re-runs don't duplicate data
+        with psycopg2.connect(database=self.database, host=self.host, user=self.user, password=self.password) as conn:
+            cur = conn.cursor()
+            cur.execute(f"TRUNCATE TABLE {table} RESTART IDENTITY")

@@ -13,8 +13,8 @@ import csv
 
 # 3. Project domain and infrastructure imports (now Python will find them perfectly!)
 from src.infrastructure.database import PostgresTurbineRepository
-from src.infrastructure.turbine_repository import TurbineRepository
 from src.application.wind_farm_service import WindFarmService
+from src.domain.wind_turbine import WindTurbine
 
 # Default arguments for the DAG
 default_args = {
@@ -47,36 +47,60 @@ def get_postgres_repo():
 def run_bronze_layer():
     """Step 1: Read raw CSV and save to bronze table"""
     postgres = get_postgres_repo()
+    postgres.truncate("wind_data_bronze")
     raw_rows = []
 
     with open(csv_file, mode="r", encoding="utf-8-sig") as file:
         reader = csv.reader(file)
         next(reader)  # Skip header
         for row in reader:
-            raw_rows.append(("T1", row[1], row[2]))
+            raw_rows.append((row[0], "T1", row[1], row[2]))
 
     postgres.save_bronze(raw_rows)
 
 
 def run_silver_layer():
-    """Step 2: Clean data using DDD repository and save to silver table"""
+    """Step 2: Clean data from bronze and save to silver table"""
     postgres = get_postgres_repo()
-    repo = TurbineRepository(str(csv_file))
-    clean_turbines = repo.load_turbines()
+    postgres.truncate("wind_data_silver")
+    raw_rows = postgres.read_bronze()
+
+    clean_turbines = []
+    for date_time, turbine_id, active_power, wind_speed in raw_rows:
+        try:
+            turbine = WindTurbine(
+                date_time=date_time,
+                turbine_id=turbine_id,
+                active_power=float(active_power),
+                wind_speed=float(wind_speed),
+            )
+            clean_turbines.append(turbine)
+        except (TypeError, ValueError):
+            continue
+
     postgres.save_silver(clean_turbines)
 
 
 def run_gold_layer():
-    """Step 3: Calculate average power and save to gold table"""
+    """Step 3: Calculate average power from silver and save to gold table"""
     postgres = get_postgres_repo()
-    repo = TurbineRepository(str(csv_file))
-    clean_turbines = repo.load_turbines()
+    postgres.truncate("wind_data_gold")
+    silver_rows = postgres.read_silver()
+
+    turbines = []
+    for created_at, turbine_id, active_power, wind_speed in silver_rows:
+        turbines.append(
+            WindTurbine(
+                date_time=str(created_at),
+                turbine_id=turbine_id,
+                active_power=float(active_power),
+                wind_speed=float(wind_speed),
+            )
+        )
 
     service = WindFarmService()
-    avg_power = service.calculate_average_power(clean_turbines)
-    current_time = datetime.now()
-
-    postgres.save_gold(current_time, avg_power)
+    avg_power = service.calculate_average_power(turbines)
+    postgres.save_gold(datetime.now(), avg_power)
 
 
 # ==========================================
@@ -88,6 +112,7 @@ with DAG(
         description='Medallion architecture ETL pipeline for wind turbine data',
         schedule_interval='@daily',
         catchup=False,
+        max_active_runs=1,
 ) as dag:
     # Define Airflow Tasks using PythonOperator
     bronze_task = PythonOperator(
